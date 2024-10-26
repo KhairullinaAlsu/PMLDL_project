@@ -40,7 +40,7 @@ def get_song_recommendations(song_name, artist_name=None, n_recommendations=5):
     n_recommendations (int): Количество рекомендованных песен (по умолчанию 5).
 
     Возвращает:
-    pd.DataFrame: DataFrame с рекомендованными песнями и их характеристиками.
+    pd.DataFrame: DataFrame с рекомендованными песнями, их характеристиками и значениями сходства.
     """
 
     # Приведение названий песен и артистов к нижнему регистру для корректного сравнения
@@ -64,15 +64,16 @@ def get_song_recommendations(song_name, artist_name=None, n_recommendations=5):
     similarity_scores = list(enumerate(similarity_matrix[idx]))
     similarity_scores = sorted(similarity_scores, key=lambda x: x[1], reverse=True)
 
-    # Получение индексов наиболее похожих песен
-    similar_songs_indices = [i[0] for i in similarity_scores[1:n_recommendations + 1]]
+    # Получение индексов и значений сходства для наиболее похожих песен
+    similar_songs = [(i[0], i[1]) for i in similarity_scores[1:n_recommendations + 1]]
 
-    # Возвращение информации о рекомендуемых песнях
-    recommended_songs = df.iloc[similar_songs_indices][['track_name', 'artist_name_x', 'genres']]
+    # Извлечение информации о рекомендуемых песнях и их значений сходства
+    recommended_songs = df.iloc[[s[0] for s in similar_songs]][['track_name', 'artist_name_x', 'genres']].copy()
+    recommended_songs['Score'] = [s[1] for s in similar_songs]
 
     # Сброс индексов и переименование колонок для удобства
     recommended_songs = recommended_songs.reset_index(drop=True)
-    recommended_songs.columns = ['Track Name', 'Artist', 'Genres']
+    recommended_songs.columns = ['Track Name', 'Artist', 'Genres', 'Score']
 
     return recommended_songs
 
