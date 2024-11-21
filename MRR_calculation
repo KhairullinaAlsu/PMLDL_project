@@ -2,11 +2,13 @@ import pandas as pd
 import numpy as np
 
 # Data loading: Load the favorite tracks for each user and the model recommendations from CSV files
-favorite_tracks_df = pd.read_csv('favorite_tracks.csv') 
+favorite_tracks_df = pd.read_csv('user_favorite_tracks.csv') 
+
 model_predictions = {
-    'nmf': pd.read_csv('user_recommendations_nmf.csv'),
-    'knn': pd.read_csv('user_recommendations_knn.csv'),
-    'keras': pd.read_csv('user_recommendations_Keras.csv')
+    'GNN': pd.read_csv('user_recommendations_GNN.csv'),
+    'KNN': pd.read_csv('user_recommendations_KNN.csv'),
+    'NMF': pd.read_csv('user_recommendations_NMF.csv'),
+    'LightFM': pd.read_csv('user_recommendations_LightFM.csv')
 }
 
 # Function to calculate Mean Reciprocal Rank (MRR) for a single model
@@ -21,9 +23,9 @@ def calculate_mrr(model_df, favorite_tracks_df):
             continue  
 
         # Get the list of recommended tracks for the user
-        recommendations = model_df[model_df['user'] == user_id].values[0][1:]  
-        # Get the user's list of favorite tracks
-        favorite_tracks = favorite_tracks_df[favorite_tracks_df['user'] == user_id].values[0][1:] 
+        recommendations = model_df[model_df['user'] == user_id].iloc[0, 1:].values  
+        # Get the user's list of favorite tracks (last 10 favorites)
+        favorite_tracks = favorite_tracks_df[favorite_tracks_df['user'] == user_id].iloc[0, -10:].values
 
         # Initialize reciprocal rank
         reciprocal_rank = 0
