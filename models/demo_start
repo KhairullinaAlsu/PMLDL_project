@@ -1,0 +1,94 @@
+import pandas as pd
+
+# Load the dataset
+df = pd.read_csv('cleaned_tracks_dataset.csv')
+
+# Function to get user preferences
+def get_user_preferences():
+    print("Welcome to the music recommendation system!")
+    print("Please answer the following questions to help us recommend songs you'll love.")
+    print()
+    
+    # Get favorite artist(s)
+    favorite_artists_input = input("Enter your favorite artist(s), separated by commas (or leave blank if none): ")
+    favorite_artists = [artist.strip().lower() for artist in favorite_artists_input.split(',')] if favorite_artists_input else []
+    
+    # Get preference for danceability (0.0 to 1.0)
+    while True:
+        try:
+            danceability = float(input("On a scale from 0.0 to 1.0, how much do you prefer danceable music? "))
+            if 0.0 <= danceability <= 1.0:
+                break
+            else:
+                print("Please enter a number between 0.0 and 1.0.")
+        except ValueError:
+            print("Invalid input. Please enter a number between 0.0 and 1.0.")
+    
+    # Get preference for valence (0.0 to 1.0)
+    while True:
+        try:
+            valence = float(input("On a scale from 0.0 to 1.0, how much do you prefer positive (happy) music? "))
+            if 0.0 <= valence <= 1.0:
+                break
+            else:
+                print("Please enter a number between 0.0 and 1.0.")
+        except ValueError:
+            print("Invalid input. Please enter a number between 0.0 and 1.0.")
+    
+    # Additional preferences (e.g., energy)
+    while True:
+        try:
+            energy = float(input("On a scale from 0.0 to 1.0, how energetic do you like your music? "))
+            if 0.0 <= energy <= 1.0:
+                break
+            else:
+                print("Please enter a number between 0.0 and 1.0.")
+        except ValueError:
+            print("Invalid input. Please enter a number between 0.0 and 1.0.")
+    
+    return {
+        'favorite_artists': favorite_artists,
+        'danceability': danceability,
+        'valence': valence,
+        'energy': energy
+    }
+
+# Function to recommend songs based on user preferences
+def recommend_songs(df, preferences, num_recommendations=10):
+    # Make a copy of the dataset to avoid SettingWithCopyWarning
+    df_recommend = df.copy()
+    
+    # Filter songs by favorite artists if provided
+    if preferences['favorite_artists']:
+        df_recommend = df_recommend[df_recommend['artistname'].str.lower().isin(preferences['favorite_artists'])]
+        if df_recommend.empty:
+            print("\nNo songs found for the specified favorite artists. Recommending based on other preferences.\n")
+            df_recommend = df.copy()
+    else:
+        print("\nNo favorite artists specified. Recommending based on other preferences.\n")
+    
+    # Normalize the feature columns for fair comparison
+    from sklearn.preprocessing import MinMaxScaler
+    scaler = MinMaxScaler()
+    df_recommend[['danceability', 'valence', 'energy']] = scaler.fit_transform(df_recommend[['danceability', 'valence', 'energy']])
+    
+    # Calculate similarity scores
+    df_recommend['similarity_score'] = (
+        abs(df_recommend['danceability'] - preferences['danceability']) +
+        abs(df_recommend['valence'] - preferences['valence']) +
+        abs(df_recommend['energy'] - preferences['energy'])
+    )
+    
+    # Sort songs by similarity score (lower is better)
+    df_recommend = df_recommend.sort_values('similarity_score')
+    
+    # Return top N recommended songs
+    recommendations = df_recommend.head(num_recommendations)
+    return recommendations[['trackname', 'artistname', 'danceability', 'valence', 'energy']]
+
+# Main program
+if __name__ == "__main__":
+    preferences = get_user_preferences()
+    recommendations = recommend_songs(df, preferences)
+    print("Here are some song recommendations for you:\n")
+    print(recommendations.to_string(index=False))
